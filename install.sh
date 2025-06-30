@@ -21,13 +21,13 @@ fi
 }
 
 # Add the latest Kali GPG key (in binary format)
-echo "Downloading Kali Linux GPG key..."
-GPG_KEY_URL="https://archive.kali.org/archive-keyring.gpg"
-GPG_KEY_FILE="/usr/share/keyrings/kali-archive-keyring.gpg"
-
-curl -fsSL "$GPG_KEY_URL" -o "$GPG_KEY_FILE" || {
-    echo "Failed to download the Kali GPG key." >&2
+# Download and convert ASCII key to .gpg
+echo "Downloading Kali Linux GPG key as ASCII and converting..."
+curl -fsSL "https://archive.kali.org/archive-key.asc" | gpg --dearmor -o /usr/share/keyrings/kali-archive-keyring.gpg || {
+    echo "Failed to fetch or convert Kali GPG key." >&2
     exit 1
+}
+
 }
 
 # Add Kali Linux repo using [signed-by=...]
