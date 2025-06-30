@@ -4,7 +4,7 @@ source "conf.sh"
 
 PROGRAM_PREFIX=""
 
-# Check if installation dir is in PATH
+# If the installation directory is not in PATH issue a warning:
 if ! echo "$PATH" | grep -q "$DIR"; then
     echo "Warning: '$DIR' is not in your PATH."
     echo "         To use this program add '$DIR'"
@@ -14,31 +14,47 @@ if ! echo "$PATH" | grep -q "$DIR"; then
     PROGRAM_PREFIX="$DIR/"
 fi
 
-# Check for python3
-/usr/bin/env python3 -V >/dev/null || { echo "Please install 'python3'" >&2; exit 1; }
-
-# Add Kali Linux GPG key (modern way)
-GPG_KEY_URL="https://archive.kali.org/archive-key.asc"
-GPG_KEY_FILE="/usr/share/keyrings/kali-archive-keyring.gpg"
-echo "Fetching GPG key..."
-curl -fsSL "$GPG_KEY_URL" | gpg --dearmor -o "$GPG_KEY_FILE" || {
-    echo "Failed to fetch or store the GPG key." >&2
+# Check if python3 is installed
+/usr/bin/env python3 -V >/dev/null || {
+    echo "Please install 'python3'" >&2
     exit 1
 }
 
-# Example APT source (make sure conf.sh handles this if needed)
-# echo "deb [signed-by=$GPG_KEY_FILE] http://http.kali.org/kali kali-rolling main contrib non-free" | tee /etc/apt/sources.list.d/kali.list
+# Add the latest Kali GPG key (in binary format)
+echo "Downloading Kali Linux GPG key..."
+GPG_KEY_URL="https://archive.kali.org/archive-keyring.gpg"
+GPG_KEY_FILE="/usr/share/keyrings/kali-archive-keyring.gpg"
 
-# Update and install dependencies
-apt-get update -qq || { echo "APT update failed." >&2; exit 1; }
-apt-get install -qq -y python3-apt || { echo "Dependency installation failed." >&2; exit 1; }
+curl -fsSL "$GPG_KEY_URL" -o "$GPG_KEY_FILE" || {
+    echo "Failed to download the Kali GPG key." >&2
+    exit 1
+}
 
-# Install katoolin3
+# Add Kali Linux repo using [signed-by=...]
+echo "Adding Kali repo..."
+echo "deb [signed-by=$GPG_KEY_FILE] http://http.kali.org/kali kali-rolling main contrib non-free" | tee /etc/apt/sources.list.d/kali.list
+
+# Update package list
+echo "Updating package list..."
+apt-get update -qq || {
+    echo "APT update failed." >&2
+    exit 1
+}
+
+# Install required Python APT bindings
+echo "Installing dependencies..."
+apt-get install -qq -y python3-apt || {
+    echo "Dependency installation failed." >&2
+    exit 1
+}
+
+# Install katoolin3.py
+echo "Installing katoolin3.py..."
 install -T -g root -o root -m 555 ./katoolin3.py "$DIR/$PROGRAM" || {
     echo "Failed to install katoolin3.py" >&2
     exit 1
 }
 
 echo "Successfully installed."
-echo "Run it with 'sudo $PROGRAM_PREFIX$PROGRAM'."
+echo "Run it with: sudo $PROGRAM_PREFIX$PROGRAM"
 exit 0
